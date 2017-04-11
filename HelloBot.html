@@ -15,7 +15,8 @@
 		}
 		
 		function visionApi(imageBase64){
-			var url = "https://vision.googleapis.com/v1/images:annotate?key=AIzaSyBC6V0krYfH5qBama4J3gwZABf2xWktQXE";
+			var apiKey = "AIzaSyBC6V0krYfH5qBama4J3gwZABf2xWktQXE";
+			var url = "https://vision.googleapis.com/v1/images:annotate?key=" + apiKey;
 			var body = {
 				"requests": [
 					{
