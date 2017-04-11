@@ -43,24 +43,37 @@
 				console.log("done");
 				console.log(response);
 				
+				var min = { score: 1 };
+				var max = { score: 0 };
+				
 				for(var i=0; i<response.responses[0].labelAnnotations.length; i++){
 					var label = response.responses[0].labelAnnotations[i];
 					console.log(label);
 					
-					if(label.score > 0.5){
-						say("hello " + label.description);
+					if(label.score < min.score){
+						min = label;
 					}
+					
+					if(label.score > max.score){
+						max = label;
+					}
+					
+					say("hello " + label.description);
 				}
+				
+				//console.log(min);
+				//console.log(max);
+				//say("hello " + min.description);
 			})
 			.fail(function(error) {
-				console.err("fail", error);
+				console.error("fail", error);
 			})
 			.always(function() {
 				console.log("always");
 			});
 		}
 	
-		function snapshot() {
+		function submit() {
 			var videoElement = $("#myVideo")[0];
 			var canvasElement = $("#myCanvas")[0];
 			var canvasContext = canvasElement.getContext("2d");
@@ -75,14 +88,60 @@
 			//console.log(imageBase64);
 			visionApi(imageBase64);
 		}
+		
+		if (('webkitSpeechRecognition' in window)) {
+			console.log("webkitSpeechRecognition");
+			
+			var recognition = new webkitSpeechRecognition();
+			recognition.continuous = true;
+			recognition.interimResults = true;
+			recognition.lang = "en-US";
+			
+			recognition.onstart = function(){
+				console.log("recognition.onstart");
+			};
+			
+			recognition.onend = function() {
+				console.log("recognition.onend");
+				recognition.start();
+			};
+			
+			recognition.onerror = function(e) {
+				console.error("recognition.onerror", e);
+			};
+			
+			recognition.onresult = function(response) {
+				//console.log(response);
+				
+				for (var i = response.resultIndex; i < response.results.length; i++) {
+					var transcript = event.results[i][0].transcript;
+					console.log(transcript);
+					$("#voiceTranscript")[0].innerHTML = transcript;
+					
+					if (event.results[i].isFinal) {
+						//console.log("final transcript");
+					}
+					else {
+						//console.log("interim transcript");
+					}
+				}
+				
+				//$("#voiceTranscript")[0].innerHTML = final_transcript;
+				//console.log("final: " + final_transcript);
+				//console.log("interim: " + interim_transcript);
+			};
+		}
+		else{
+			console.error("error webkitSpeechRecognition is not supported by your browser");
+		}
 	
 		$(document).ready(function() {
-			console.log("ready!");
+			console.log("document ready");
 			
 			if (hasGetUserMedia()) {
-				console.log("has user media");
+				console.log("browser supports user media");
 			} else {
-				console.err("getUserMedia() is not supported in your browser");
+				console.error("getUserMedia() is not supported in your browser");
 			}
 			
 			var mediaSettings = {
@@ -92,7 +151,7 @@
 						minHeight: 480
 					}
 				},
-				audio: true
+				audio: false
 			};
 			navigator.getUserMedia(
 				mediaSettings,
@@ -107,18 +166,25 @@
 					
 				},
 				function(e){
-					console.err("video and audio failed", e);
+					console.error("video and audio failed", e);
 				}
 			);
 			
-			//var intervalId = setInterval(function(){
-				//snapshot();
-			//}, 5000);
+			recognition.start();
+			var intervalId = setInterval(function(){
+				console.log("interval start");
+				recognition.stop();
+			}, 1000 * 10);
+			
+			
+			
 		});
 	</script>
 </head>
 <body>
-	<button onclick="snapshot()">Snapshot</button>
+	<button onclick="submit()">Submit</button>
+	<span id="voiceTranscript"></span>
+	<hr/>
 	<video id="myVideo" autoplay></video>
 	<img id="myImage" src="">
 	<canvas id="myCanvas"></canvas>
